@@ -34,8 +34,6 @@
         android:id="@+id/btnSavePhoto"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
-        android:minWidth="0"
-        android:minHeight="0"
         android:background="@drawable/bg_button_gradient"
         android:gravity="center"
         android:paddingHorizontal="12dp"

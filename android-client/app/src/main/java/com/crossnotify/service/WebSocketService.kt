@@ -33,6 +33,7 @@ class WebSocketService : Service() {
     companion object {
         private const val TAG = "WebSocketService"
         private const val CHANNEL_ID = "crossnotify_ws"
+        private const val REMINDER_CHANNEL_ID = "crossnotify_reminder"
         private const val NOTIFICATION_ID = 1001
         private const val RECONNECT_DELAY_MS = 5000L
 
@@ -231,25 +232,48 @@ class WebSocketService : Service() {
         Log.i(TAG, "Photo sent to PC: $fileName (${base64.length} chars)")
     }
 
-    // ─── 保存照片到相册（供用户主动调用） ───────────────────────
+    // ─── 保存照片到系统相册 ─────────────────────────────────────
 
     private fun savePhotoToGallery(base64: String, fileName: String): String? {
         return try {
             val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+            val time = System.currentTimeMillis() / 1000
+            val displayName = "mqx_${time}.jpg"
+
+            // 全部 API 级别: 使用 MediaStore 写入系统相册
+            val values = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, displayName)
+                put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(android.provider.MediaStore.Images.Media.DATE_ADDED, time)
+                put(android.provider.MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
+                }
+            }
+            val uri = contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            if (uri != null) {
+                contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                val path = "系统相册 → $displayName"
+                Log.i(TAG, "MediaStore save OK: $path")
+                return path
+            }
+
+            // 降级: 写入应用目录（所有设备通用）
             val dir = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
             if (dir != null && !dir.exists()) dir.mkdirs()
-            val file = java.io.File(dir, fileName)
+            val file = java.io.File(dir, displayName)
             java.io.FileOutputStream(file).use { it.write(bytes) }
             val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
             intent.data = android.net.Uri.fromFile(file)
             sendBroadcast(intent)
-            Log.i(TAG, "Photo saved: ${file.absolutePath}")
-            file.absolutePath
-        } catch (e: Exception) { Log.e(TAG, "Failed to save photo", e); null }
+            val path = "系统相册 → Pictures/$displayName"
+            Log.i(TAG, "Fallback save: ${file.absolutePath}")
+            path
+        } catch (e: Exception) { Log.e(TAG, "Save photo failed", e); null }
     }
 
-    fun savePhoto(photo: String, name: String) {
-        savePhotoToGallery(photo, name)
+    fun savePhoto(photo: String, name: String): String? {
+        return savePhotoToGallery(photo, name)
     }
 
     // ─── 照片通知（预览+保存按钮） ─────────────────────────────
@@ -289,6 +313,13 @@ class WebSocketService : Service() {
     // ─── 通知 ─────────────────────────────────────────────────────
 
     private fun showReminderNotification(title: String, body: String) {
+        // 确保提醒频道存在
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val reminderChannel = NotificationChannel(
+            REMINDER_CHANNEL_ID, "新提醒", NotificationManager.IMPORTANCE_HIGH
+        ).apply { enableVibration(true); enableLights(true) }
+        nm.createNotificationChannel(reminderChannel)
+
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -297,7 +328,7 @@ class WebSocketService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = Notification.Builder(this, CHANNEL_ID)
+        val notification = Notification.Builder(this, REMINDER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(body)
@@ -306,7 +337,7 @@ class WebSocketService : Service() {
             .setPriority(Notification.PRIORITY_HIGH)
             .build()
 
-        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(System.currentTimeMillis().toInt(), notification)
         nm.notify(System.currentTimeMillis().toInt(), notification)
     }
 

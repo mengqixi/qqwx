@@ -143,8 +143,9 @@ class MainActivity : AppCompatActivity() {
 
         // 消息列表
         messageAdapter = MessageAdapter(messages) { base64 ->
-            wsService?.savePhoto(base64, "photo_${System.currentTimeMillis()}.jpg")
-            Toast.makeText(this, "💾 已保存到相册", Toast.LENGTH_SHORT).show()
+            val result = wsService?.savePhoto(base64, "photo_${System.currentTimeMillis()}.jpg")
+            val msg = if (result != null) "💾 $result" else "❌ 保存失败"
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
         }
         messageList.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
@@ -226,8 +227,8 @@ class MainActivity : AppCompatActivity() {
         if (intent?.getStringExtra("action") == "save_photo") {
             val data = intent.getStringExtra("photo_data") ?: return
             val name = intent.getStringExtra("photo_name") ?: "photo.jpg"
-            wsService?.savePhoto(data, name)
-            Toast.makeText(this, "💾 照片已保存到相册", Toast.LENGTH_LONG).show()
+            val result = wsService?.savePhoto(data, name)
+            Toast.makeText(this, if (result != null) "💾 $result" else "❌ 保存失败", Toast.LENGTH_LONG).show()
         }
     }
 

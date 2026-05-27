@@ -11,10 +11,10 @@
     --sidebar-bg: rgba(30, 32, 40, 0.55);
     --sidebar-border: rgba(255, 255, 255, 0.08);
 
-    --accent: #7c8df0;
-    --accent-hover: #9aabff;
-    --accent-gradient: linear-gradient(135deg, #7c8df0, #a78bfa);
-    --accent-glow: rgba(124, 141, 240, 0.3);
+    --accent: #5a6a8a;
+    --accent-hover: #7a8aaa;
+    --accent-gradient: linear-gradient(135deg, #5a6a8a, #6d7f9e);
+    --accent-glow: rgba(90, 106, 138, 0.3);
 
     --green: #60d7a9;
     --green-bg: rgba(96, 215, 169, 0.15);
@@ -555,8 +555,8 @@ body {
 
 /* Photo preview */
 .photo-preview {
-    max-width: 280px;
-    max-height: 280px;
+    max-width: 400px;
+    max-height: 400px;
     border-radius: 8px;
     margin: 4px 0;
     cursor: pointer;

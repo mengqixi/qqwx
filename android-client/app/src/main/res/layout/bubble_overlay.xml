@@ -30,13 +30,15 @@
 
             <TextView
                 android:id="@+id/btnBubbleClose"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="32dp"
+                android:layout_height="26dp"
                 android:layout_gravity="end|center_vertical"
+                android:background="#CC4444"
                 android:gravity="center"
                 android:text="✕"
-                android:textColor="#999"
-                android:textSize="14sp" />
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:paddingHorizontal="4dp" />
         </FrameLayout>
 
         <!-- 消息显示区域 -->
@@ -54,30 +56,18 @@
         <!-- 照片预览 -->
         <ImageView
             android:id="@+id/bubblePhoto"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
             android:scaleType="centerCrop"
             android:visibility="gone"
             android:layout_marginTop="4dp"
             android:background="@drawable/bg_glass_card" />
 
-        <!-- 标题输入 -->
-        <EditText
-            android:id="@+id/bubbleTitle"
-            android:layout_width="match_parent"
-            android:layout_height="36dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_input_glass"
-            android:hint="标题（可选）"
-            android:maxLength="50"
-            android:paddingHorizontal="10dp"
-            android:textSize="13sp" />
-
         <!-- 内容输入 -->
         <EditText
             android:id="@+id/bubbleBody"
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_marginTop="4dp"
             android:background="@drawable/bg_input_glass"
             android:hint="输入内容..."
