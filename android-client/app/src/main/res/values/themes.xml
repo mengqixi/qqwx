@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Mengqixi" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#0071e3</item>
+        <item name="colorPrimaryVariant">#0060c1</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorSecondary">#34c759</item>
+        <item name="android:statusBarColor">#1d1d1f</item>
+    </style>
+</resources>

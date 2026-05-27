@@ -1,0 +1,40 @@
+# Node
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# Android build
+android-client/app/build/
+android-client/.gradle/
+android-client/app/google-services.json
+*.apk
+*.aab
+
+# PC build
+dist/
+pc-client/node_modules/
+pc-client/package-lock.json
+pc-client/icon.ico
+pc-client/icon.png
+
+# Server
+server/.env
+server/firebase-key.json
+server/node_modules/
+server/package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+/tmp/
+*.zip
+*.log

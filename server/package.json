@@ -1,0 +1,15 @@
+{
+  "name": "crossnotify-server",
+  "version": "1.0.0",
+  "description": "CrossNotify WebSocket signaling server with FCM push support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "pm2": "pm2 start server.js --name crossnotify"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "firebase-admin": "^12.1.0",
+    "dotenv": "^16.4.5"
+  }
+}
