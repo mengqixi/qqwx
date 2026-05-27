@@ -555,15 +555,16 @@ body {
 
 /* Photo preview */
 .photo-preview {
-    max-width: 200px;
-    max-height: 200px;
+    max-width: 280px;
+    max-height: 280px;
     border-radius: 8px;
     margin: 4px 0;
     cursor: pointer;
     transition: transform 0.2s;
+    display: block;
 }
 
-.photo-preview:hover { transform: scale(1.05); }
+.photo-preview:hover { transform: scale(1.02); }
 
 /* ═══ Modal ══════════════════════════════════════════════════════ */
 

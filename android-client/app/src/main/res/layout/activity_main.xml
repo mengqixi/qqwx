@@ -120,13 +120,13 @@
 
                 <Button
                     android:id="@+id/btnBubble"
-                    android:layout_width="52dp"
+                    android:layout_width="60dp"
                     android:layout_height="38dp"
                     android:background="@drawable/bg_glass_dark"
                     android:gravity="center"
-                    android:text="悬浮"
-                    android:textColor="#AAA"
-                    android:textSize="12sp" />
+                    android:text="悬浮窗"
+                    android:textColor="#CCC"
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <!-- 右侧发送按钮 -->

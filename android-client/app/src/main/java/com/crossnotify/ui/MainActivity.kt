@@ -39,6 +39,14 @@ class MainActivity : AppCompatActivity() {
     private val messages = mutableListOf<MessageItem>()
     private lateinit var messageAdapter: MessageAdapter
 
+    private val backgroundReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == "com.crossnotify.BACKGROUND") {
+                moveTaskToBack(true)
+            }
+        }
+    }
+
     // 消息数据类
     data class MessageItem(
         val type: String,  // "sent" / "received" / "system" / "photo_sent" / "photo_received"
@@ -61,7 +69,7 @@ class MainActivity : AppCompatActivity() {
             }
             WebSocketService.onPhotoReceived = { base64, fileName ->
                 runOnUiThread {
-                    addMessage("photo_received", "📷 收到照片", "已保存到相册: $fileName", photoBase64 = base64)
+                    addMessage("photo_received", "📷 收到照片", "点击右下角保存", photoBase64 = base64)
                 }
             }
             WebSocketService.onStatusChange = { connected ->
@@ -112,6 +120,14 @@ class MainActivity : AppCompatActivity() {
         // 处理通知中的保存照片请求
         handleIntent(intent)
 
+        // 监听悬浮窗广播：进入后台
+        val filter = android.content.IntentFilter("com.crossnotify.BACKGROUND")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(backgroundReceiver, filter, android.Manifest.permission.POST_NOTIFICATIONS, null)
+        } else {
+            registerReceiver(backgroundReceiver, filter)
+        }
+
         statusText = findViewById(R.id.statusText)
         connectionInfo = findViewById(R.id.connectionInfo)
         btnToggle = findViewById(R.id.btnToggle)
@@ -126,7 +142,10 @@ class MainActivity : AppCompatActivity() {
         messageList = findViewById(R.id.messageList)
 
         // 消息列表
-        messageAdapter = MessageAdapter(messages)
+        messageAdapter = MessageAdapter(messages) { base64 ->
+            wsService?.savePhoto(base64, "photo_${System.currentTimeMillis()}.jpg")
+            Toast.makeText(this, "💾 已保存到相册", Toast.LENGTH_SHORT).show()
+        }
         messageList.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -196,6 +215,11 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try { unregisterReceiver(backgroundReceiver) } catch (_: Exception) {}
     }
 
     private fun handleIntent(intent: Intent?) {

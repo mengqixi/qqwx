@@ -68,13 +68,13 @@ class BubbleService : Service() {
                             val from = msg.optString("from", "pc")
                             bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.text = "📩 ${if (from == "pc") "PC" else "手机"}: ${title}\n$body"
                             bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.VISIBLE
-                            // 点击消息跳转到主界面
+                            // 点击消息跳转到主界面（先启动Activity，再停止Service）
                             bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.setOnClickListener {
-                                stopSelf()
                                 val i = Intent(this@BubbleService, com.crossnotify.ui.MainActivity::class.java).apply {
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                                 }
                                 startActivity(i)
+                                stopSelf()
                             }
                             android.os.Handler(mainLooper).postDelayed({
                                 bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.GONE
@@ -93,11 +93,11 @@ class BubbleService : Service() {
                                     imgView?.setImageBitmap(bmp)
                                     imgView?.visibility = View.VISIBLE
                                     imgView?.setOnClickListener {
-                                        stopSelf()
                                         val i = Intent(this@BubbleService, com.crossnotify.ui.MainActivity::class.java).apply {
                                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                                         }
                                         startActivity(i)
+                                        stopSelf()
                                     }
                                 } catch (_: Exception) {}
                             }
@@ -186,6 +186,8 @@ class BubbleService : Service() {
         }
         // 关闭
         bubbleView?.findViewById<View>(R.id.btnBubbleClose)?.setOnClickListener { stopSelf() }
+        // 通知主Activity进入后台
+        sendBroadcast(Intent("com.crossnotify.BACKGROUND"))
         wm.addView(bubbleView, params)
     }
     private fun hideBubble() { bubbleView?.let { wm.removeView(it) }; bubbleView = null }
