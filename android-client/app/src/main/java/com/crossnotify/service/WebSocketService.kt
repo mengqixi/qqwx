@@ -186,9 +186,9 @@ class WebSocketService : Service() {
                     val data = msg.optString("data", "")
 
                     if (data.isNotEmpty()) {
-                        savePhotoToGallery(data, name)
-                        // 通知 UI 预览
+                        // 通知 UI 预览（不再自动保存）
                         onPhotoReceived?.invoke(data, name)
+                        showPhotoNotification(data, name)
                     }
                 }
 
@@ -231,27 +231,59 @@ class WebSocketService : Service() {
         Log.i(TAG, "Photo sent to PC: $fileName (${base64.length} chars)")
     }
 
-    // ─── 保存照片到相册 ──────────────────────────────────────────
+    // ─── 保存照片到相册（供用户主动调用） ───────────────────────
 
-    private fun savePhotoToGallery(base64: String, fileName: String) {
-        try {
+    private fun savePhotoToGallery(base64: String, fileName: String): String? {
+        return try {
             val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
             val dir = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
             if (dir != null && !dir.exists()) dir.mkdirs()
             val file = java.io.File(dir, fileName)
             java.io.FileOutputStream(file).use { it.write(bytes) }
-
-            // 通知系统相册刷新
             val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
             intent.data = android.net.Uri.fromFile(file)
             sendBroadcast(intent)
+            Log.i(TAG, "Photo saved: ${file.absolutePath}")
+            file.absolutePath
+        } catch (e: Exception) { Log.e(TAG, "Failed to save photo", e); null }
+    }
 
-            Log.i(TAG, "Photo saved: ${file.absolutePath} (${bytes.size} bytes)")
+    fun savePhoto(photo: String, name: String) {
+        savePhotoToGallery(photo, name)
+    }
 
-            // 发送方收到通知：在 delivery_status 时附加路径信息
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save photo", e)
+    // ─── 照片通知（预览+保存按钮） ─────────────────────────────
+
+    private fun showPhotoNotification(base64: String, fileName: String) {
+        val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val channel = android.app.NotificationChannel("photo_preview", "照片预览", android.app.NotificationManager.IMPORTANCE_HIGH).apply {
+            enableVibration(true)
         }
+        nm.createNotificationChannel(channel)
+
+        // 保存按钮通过 PendingIntent 启动 Activity 执行保存
+        val saveIntent = Intent(this, com.crossnotify.ui.MainActivity::class.java).apply {
+            putExtra("action", "save_photo")
+            putExtra("photo_data", base64)
+            putExtra("photo_name", fileName)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val savePending = PendingIntent.getActivity(this, (System.currentTimeMillis() % 100000).toInt(),
+            saveIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+        val notification = android.app.Notification.Builder(this, "photo_preview")
+            .setSmallIcon(android.R.drawable.ic_menu_gallery)
+            .setContentTitle("📷 收到照片")
+            .setContentText(fileName)
+            .setAutoCancel(true)
+            .addAction(android.R.drawable.ic_menu_save, "💾 保存到相册", savePending)
+            .setStyle(android.app.Notification.BigPictureStyle()
+                .bigPicture(android.graphics.BitmapFactory.decodeByteArray(
+                    android.util.Base64.decode(base64, android.util.Base64.DEFAULT), 0,
+                    android.util.Base64.decode(base64, android.util.Base64.DEFAULT).size)))
+            .setPriority(android.app.Notification.PRIORITY_HIGH)
+            .build()
+        nm.notify(System.currentTimeMillis().toInt(), notification)
     }
 
     // ─── 通知 ─────────────────────────────────────────────────────

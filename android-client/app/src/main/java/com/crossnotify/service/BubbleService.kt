@@ -61,17 +61,53 @@ class BubbleService : Service() {
             override fun onMessage(ws: WebSocket, text: String) {
                 try {
                     val msg = JSONObject(text)
-                    if (msg.optString("type") == "reminder") {
-                        val title = msg.optString("title", "新提醒")
-                        val body = msg.optString("body", "")
-                        val from = msg.optString("from", "pc")
-                        val display = "📩 ${if (from == "pc") "PC" else "手机"}: ${title}"
-                        bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.text = "$display\n$body"
-                        bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.VISIBLE
-                        // 自动隐藏消息
-                        android.os.Handler(mainLooper).postDelayed({
-                            bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.GONE
-                        }, 5000)
+                    when (msg.optString("type")) {
+                        "reminder" -> {
+                            val title = msg.optString("title", "新提醒")
+                            val body = msg.optString("body", "")
+                            val from = msg.optString("from", "pc")
+                            bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.text = "📩 ${if (from == "pc") "PC" else "手机"}: ${title}\n$body"
+                            bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.VISIBLE
+                            // 点击消息跳转到主界面
+                            bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.setOnClickListener {
+                                stopSelf()
+                                val i = Intent(this@BubbleService, com.crossnotify.ui.MainActivity::class.java).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                }
+                                startActivity(i)
+                            }
+                            android.os.Handler(mainLooper).postDelayed({
+                                bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.GONE
+                            }, 5000)
+                        }
+                        "photo" -> {
+                            val data = msg.optString("data", "")
+                            val name = msg.optString("name", "photo.jpg")
+                            val from = msg.optString("from", "pc")
+                            // 显示图片预览
+                            if (data.isNotEmpty()) {
+                                try {
+                                    val bytes = android.util.Base64.decode(data, android.util.Base64.DEFAULT)
+                                    val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                    val imgView = bubbleView?.findViewById<android.widget.ImageView>(R.id.bubblePhoto)
+                                    imgView?.setImageBitmap(bmp)
+                                    imgView?.visibility = View.VISIBLE
+                                    imgView?.setOnClickListener {
+                                        stopSelf()
+                                        val i = Intent(this@BubbleService, com.crossnotify.ui.MainActivity::class.java).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                        }
+                                        startActivity(i)
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                            bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.text = "📷 来自${if (from == "pc") "PC" else "手机"}的照片"
+                            bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.VISIBLE
+                            android.os.Handler(mainLooper).postDelayed({
+                                bubbleView?.findViewById<TextView>(R.id.bubbleMsg)?.visibility = View.GONE
+                                bubbleView?.findViewById<android.widget.ImageView>(R.id.bubblePhoto)?.visibility = View.GONE
+                            }, 8000)
+                        }
                     }
                 } catch (_: Exception) {}
             }

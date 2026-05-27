@@ -109,6 +109,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // 处理通知中的保存照片请求
+        handleIntent(intent)
+
         statusText = findViewById(R.id.statusText)
         connectionInfo = findViewById(R.id.connectionInfo)
         btnToggle = findViewById(R.id.btnToggle)
@@ -183,9 +186,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        handleIntent(intent)
         updateServiceState()
         Intent(this, WebSocketService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getStringExtra("action") == "save_photo") {
+            val data = intent.getStringExtra("photo_data") ?: return
+            val name = intent.getStringExtra("photo_name") ?: "photo.jpg"
+            wsService?.savePhoto(data, name)
+            Toast.makeText(this, "💾 照片已保存到相册", Toast.LENGTH_LONG).show()
         }
     }
 

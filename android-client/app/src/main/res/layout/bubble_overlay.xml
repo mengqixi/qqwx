@@ -51,6 +51,16 @@
             android:textSize="12sp"
             android:visibility="gone" />
 
+        <!-- 照片预览 -->
+        <ImageView
+            android:id="@+id/bubblePhoto"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_glass_card" />
+
         <!-- 标题输入 -->
         <EditText
             android:id="@+id/bubbleTitle"

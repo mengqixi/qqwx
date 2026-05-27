@@ -8,8 +8,8 @@
     <!-- 顶栏：连接状态 + 启动按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/bg_glass_dark"
+        android:layout_height="52dp"
+        android:background="#781E2028"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp">
 
@@ -34,13 +34,14 @@
         <!-- 启动按钮（连接后隐藏） -->
         <Button
             android:id="@+id/btnToggle"
-            android:layout_width="44dp"
-            android:layout_height="36dp"
-            android:background="@drawable/bg_button_gradient"
+            android:layout_width="52dp"
+            android:layout_height="40dp"
+            android:background="#4A6CF7"
             android:gravity="center"
-            android:text="▶"
+            android:text="启动"
+            android:textAllCaps="false"
             android:textColor="#FFFFFF"
-            android:textSize="18sp" />
+            android:textSize="13sp" />
     </LinearLayout>
 
     <!-- 消息列表 -->
@@ -113,8 +114,9 @@
                     android:layout_marginEnd="6dp"
                     android:background="@drawable/bg_glass_dark"
                     android:gravity="center"
-                    android:text="📷"
-                    android:textSize="20sp" />
+                    android:text="照片"
+                    android:textColor="#CCC"
+                    android:textSize="12sp" />
 
                 <Button
                     android:id="@+id/btnBubble"
