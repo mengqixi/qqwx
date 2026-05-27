@@ -12,7 +12,7 @@
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="梦柒兮"
+        android:label="mqx"
         android:supportsRtl="true"
         android:theme="@style/Theme.Mengqixi"
         android:usesCleartextTraffic="true"
