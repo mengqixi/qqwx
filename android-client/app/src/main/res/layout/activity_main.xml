@@ -122,9 +122,9 @@
                     android:layout_height="38dp"
                     android:background="@drawable/bg_glass_dark"
                     android:gravity="center"
-                    android:text="⊕"
+                    android:text="悬浮"
                     android:textColor="#AAA"
-                    android:textSize="22sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <!-- 右侧发送按钮 -->

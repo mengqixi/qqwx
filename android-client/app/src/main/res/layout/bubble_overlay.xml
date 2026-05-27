@@ -39,6 +39,18 @@
                 android:textSize="14sp" />
         </FrameLayout>
 
+        <!-- 消息显示区域 -->
+        <TextView
+            android:id="@+id/bubbleMsg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_input_glass"
+            android:padding="8dp"
+            android:textColor="#333"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
         <!-- 标题输入 -->
         <EditText
             android:id="@+id/bubbleTitle"
