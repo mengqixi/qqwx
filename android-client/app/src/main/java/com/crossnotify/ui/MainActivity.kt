@@ -41,10 +41,11 @@ class MainActivity : AppCompatActivity() {
 
     // 消息数据类
     data class MessageItem(
-        val type: String,  // "sent" / "received" / "system"
+        val type: String,  // "sent" / "received" / "system" / "photo_sent" / "photo_received"
         val title: String,
         val body: String,
-        val time: String
+        val time: String,
+        val photoBase64: String = ""
     )
 
     private val connection = object : ServiceConnection {
@@ -56,6 +57,11 @@ class MainActivity : AppCompatActivity() {
             WebSocketService.onReminderReceived = { title, body ->
                 runOnUiThread {
                     addMessage("received", title, body)
+                }
+            }
+            WebSocketService.onPhotoReceived = { base64, fileName ->
+                runOnUiThread {
+                    addMessage("photo_received", "📷 收到照片", "已保存到相册: $fileName", photoBase64 = base64)
                 }
             }
             WebSocketService.onStatusChange = { connected ->
@@ -263,9 +269,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun addMessage(type: String, title: String, body: String) {
+    private fun addMessage(type: String, title: String, body: String = "", photoBase64: String = "") {
         val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())
-        messages.add(MessageItem(type, title, body, time))
+        messages.add(MessageItem(type, title, body, time, photoBase64))
         messageAdapter.notifyItemInserted(messages.size - 1)
         messageList.smoothScrollToPosition(messages.size - 1)
     }

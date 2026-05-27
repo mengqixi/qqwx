@@ -39,6 +39,7 @@ class WebSocketService : Service() {
         // 全局回调，供 Activity 监听连接状态
         var onStatusChange: ((Boolean) -> Unit)? = null
         var onReminderReceived: ((String, String) -> Unit)? = null
+        var onPhotoReceived: ((String, String) -> Unit)? = null  // (base64, fileName)
         var connectionState: ConnectionState = ConnectionState.DISCONNECTED
             private set
 
@@ -186,8 +187,9 @@ class WebSocketService : Service() {
 
                     if (data.isNotEmpty()) {
                         savePhotoToGallery(data, name)
+                        // 通知 UI 预览
+                        onPhotoReceived?.invoke(data, name)
                     }
-                    onReminderReceived?.invoke("📷 来自${if (from == "pc") "PC" else "手机"}的照片", name)
                 }
 
                 "peer_status" -> {
@@ -245,6 +247,8 @@ class WebSocketService : Service() {
             sendBroadcast(intent)
 
             Log.i(TAG, "Photo saved: ${file.absolutePath} (${bytes.size} bytes)")
+
+            // 发送方收到通知：在 delivery_status 时附加路径信息
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save photo", e)
         }

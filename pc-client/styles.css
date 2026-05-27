@@ -553,6 +553,18 @@ body {
 .msg-body { opacity: 0.85; }
 .msg-time { font-size: 10px; opacity: 0.5; display: block; margin-top: 3px; }
 
+/* Photo preview */
+.photo-preview {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    margin: 4px 0;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.photo-preview:hover { transform: scale(1.05); }
+
 /* ═══ Modal ══════════════════════════════════════════════════════ */
 
 .modal-overlay {

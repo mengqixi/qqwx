@@ -5,10 +5,10 @@
     android:orientation="vertical"
     android:background="#EDEAF5">
 
-    <!-- 连接状态栏 — 毛玻璃暗色 -->
+    <!-- 顶栏：连接状态 + 启动按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="48dp"
         android:background="@drawable/bg_glass_dark"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp">
@@ -20,38 +20,36 @@
             android:layout_weight="1"
             android:text="○ 未连接"
             android:textColor="#FF8E8E93"
-            android:textSize="13sp" />
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/connectionInfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
             android:text="点按启动"
             android:textColor="#8E8E93"
-            android:textSize="12sp" />
+            android:textSize="13sp" />
 
-        <!-- 启动/停止服务 小红点按钮 -->
+        <!-- 启动按钮（连接后隐藏） -->
         <Button
             android:id="@+id/btnToggle"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="44dp"
+            android:layout_height="36dp"
             android:background="@drawable/bg_button_gradient"
             android:gravity="center"
             android:text="▶"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:visibility="visible" />
+            android:textSize="18sp" />
     </LinearLayout>
 
-    <!-- 消息列表区域 — 毛玻璃背景 -->
+    <!-- 消息列表 -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="@drawable/bg_glass_card"
         android:layout_margin="8dp">
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/messageList"
             android:layout_width="match_parent"
@@ -60,85 +58,90 @@
             android:padding="8dp" />
     </FrameLayout>
 
-    <!-- 底部输入区 — 毛玻璃卡片 -->
+    <!-- 底部输入区 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_glass_card"
         android:orientation="vertical"
         android:elevation="4dp"
-        android:padding="8dp"
-        android:layout_margin="8dp"
-        android:layout_marginBottom="8dp">
+        android:padding="10dp"
+        android:layout_margin="8dp">
 
-        <!-- 标题输入 -->
         <EditText
             android:id="@+id/reminderTitle"
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:background="@drawable/bg_input_glass"
             android:gravity="center_vertical|start"
             android:hint="标题（可选）"
             android:maxLength="50"
-            android:paddingHorizontal="10dp"
-            android:textSize="13sp" />
+            android:paddingHorizontal="12dp"
+            android:textSize="14sp" />
 
-        <!-- 内容输入 -->
         <EditText
             android:id="@+id/reminderBody"
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_marginTop="4dp"
             android:background="@drawable/bg_input_glass"
             android:gravity="center_vertical|start"
             android:hint="输入提醒内容..."
             android:maxLength="200"
-            android:paddingHorizontal="10dp"
-            android:textSize="13sp" />
+            android:paddingHorizontal="12dp"
+            android:textSize="14sp" />
 
-        <!-- 按钮行：发送 | 照片 | 悬浮 -->
-        <LinearLayout
+        <!-- 底栏：左=照片+悬浮 右=发送，等PC风格 -->
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal">
+            android:layout_height="44dp"
+            android:layout_marginTop="6dp">
 
+            <!-- 左侧工具按钮 -->
+            <LinearLayout
+                android:id="@+id/leftTools"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnSendPhoto"
+                    android:layout_width="52dp"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_glass_dark"
+                    android:gravity="center"
+                    android:text="📷"
+                    android:textSize="20sp" />
+
+                <Button
+                    android:id="@+id/btnBubble"
+                    android:layout_width="52dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_glass_dark"
+                    android:gravity="center"
+                    android:text="⊕"
+                    android:textColor="#AAA"
+                    android:textSize="22sp" />
+            </LinearLayout>
+
+            <!-- 右侧发送按钮 -->
             <Button
                 android:id="@+id/btnRemindPc"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:layout_weight="1"
+                android:layout_width="100dp"
+                android:layout_height="38dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
                 android:background="@drawable/bg_button_gradient"
                 android:enabled="false"
-                android:text="发送"
+                android:gravity="center"
+                android:text="发送 →"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/btnSendPhoto"
-                android:layout_width="48dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/bg_glass_dark"
-                android:enabled="false"
-                android:gravity="center"
-                android:text="📷"
-                android:textSize="18sp" />
-
-            <Button
-                android:id="@+id/btnBubble"
-                android:layout_width="48dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="0dp"
-                android:background="@drawable/bg_glass_dark"
-                android:gravity="center"
-                android:text="⊕"
-                android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:visibility="gone" />
-        </LinearLayout>
+                android:textSize="14sp" />
+        </RelativeLayout>
     </LinearLayout>
 
 </LinearLayout>

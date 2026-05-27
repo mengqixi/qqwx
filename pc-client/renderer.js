@@ -149,7 +149,31 @@ function handleMessage(msg) {
             const from = msg.from === 'android' ? '手机' : 'PC';
             addLog('received', `📷 来自${from}的照片`, msg.name || '');
             if (msg.data) {
-                addLog('system', `📎 收到图片: ${msg.name} (${Math.round(msg.data.length/1024)}KB)`);
+                // Add image preview
+                const img = document.createElement('img');
+                img.src = 'data:image/jpeg;base64,' + msg.data;
+                img.className = 'photo-preview';
+                // Download button
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'btn btn-secondary';
+                downloadBtn.textContent = '💾 保存图片';
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = img.src;
+                    a.download = msg.name || 'photo.jpg';
+                    a.click();
+                };
+                const container = document.createElement('div');
+                container.className = 'msg msg-received';
+                container.appendChild(img);
+                container.appendChild(downloadBtn);
+                const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const timeEl = document.createElement('div');
+                timeEl.className = 'msg-time';
+                timeEl.textContent = time;
+                container.appendChild(timeEl);
+                messageList.appendChild(container);
+                messageList.scrollTop = messageList.scrollHeight;
             }
             break;
         }
