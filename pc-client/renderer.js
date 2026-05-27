@@ -22,6 +22,8 @@ const btnCloseModal = $('#btnCloseModal');
 const btnMinimize = $('#btnMinimize');
 const btnClose = $('#btnClose');
 const logEmpty = document.querySelector('.log-empty');
+const btnAttach = $('#btnAttach');
+const photoInput = $('#photoInput');
 
 let ws = null;
 let reconnectTimer = null;
@@ -142,6 +144,15 @@ function handleMessage(msg) {
             break;
         }
 
+        case 'photo': {
+            const from = msg.from === 'android' ? '手机' : 'PC';
+            addLog('received', `📷 来自${from}的照片`, msg.name || '');
+            if (msg.data) {
+                addLog('system', `📎 收到图片: ${msg.name} (${Math.round(msg.data.length/1024)}KB)`);
+            }
+            break;
+        }
+
         case 'delivery_status':
             if (msg.sentDirect > 0) addLog('system', `✅ 已送达手机端`);
             else if (msg.fcmTriggered) addLog('system', `📡 已通过 FCM 推送`);
@@ -207,11 +218,33 @@ function hideModal() { settingsModal.classList.add('hidden'); }
 // ─── 事件绑定 ─────────────────────────────────────────────────────
 btnRemind.addEventListener('click', sendReminder);
 
+// 照片发送
+btnAttach.addEventListener('click', () => photoInput.click());
+photoInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'photo', target: 'android',
+                data: base64, name: file.name
+            }));
+            addLog('sent', `📷 ${file.name}`, `${Math.round(file.size/1024)}KB`);
+        } else {
+            addLog('system', '⚠️ 未连接，无法发送照片');
+        }
+        photoInput.value = '';
+    };
+    reader.readAsDataURL(file);
+});
+
 reminderTitle.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); reminderBody.focus(); }
 });
 reminderBody.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); sendReminder(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReminder(); }
 });
 
 btnClearLog.addEventListener('click', () => {

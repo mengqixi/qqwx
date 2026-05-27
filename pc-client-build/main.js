@@ -61,8 +61,8 @@ function createWindow() {
 }
 
 function createTray() {
-    // Create a simple 16x16 tray icon
-    const icon = nativeImage.createEmpty();
+    const iconPath = path.join(__dirname, 'icon.png');
+    const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
     tray = new Tray(icon);
     tray.setToolTip('梦柒兮');
 
@@ -87,7 +87,11 @@ ipcMain.handle('set-config', (_, newConfig) => {
 
 ipcMain.handle('show-notification', (_, { title, body }) => {
     if (Notification.isSupported()) {
-        const notif = new Notification({ title, body });
+        const notif = new Notification({
+            title,
+            body,
+            icon: path.join(__dirname, 'icon.png'),
+        });
         notif.on('click', () => {
             if (mainWindow) {
                 mainWindow.show();
@@ -108,6 +112,8 @@ ipcMain.handle('hide-window', () => {
 
 // ─── App Lifecycle ──────────────────────────────────────────────────
 app.whenReady().then(() => {
+    // 设置 Windows AppUserModelID（通知来源名称）
+    app.setAppUserModelId('梦柒兮');
     createWindow();
     createTray();
 });

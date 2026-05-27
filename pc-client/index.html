@@ -113,7 +113,17 @@
                               placeholder="输入提醒内容..." maxlength="200" rows="2"></textarea>
                 </div>
                 <div class="compose-footer">
-                    <span class="compose-hint">按 Ctrl+Enter 发送</span>
+                    <div class="footer-left">
+                        <input type="file" id="photoInput" accept="image/*" hidden />
+                        <button class="btn btn-icon-only" id="btnAttach" title="发送照片">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <path d="M21 15l-5-5L5 21"/>
+                            </svg>
+                        </button>
+                        <span class="compose-hint">按 Enter 发送</span>
+                    </div>
                     <button class="btn btn-primary" id="btnRemind" disabled>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <line x1="22" y1="2" x2="11" y2="13"/>

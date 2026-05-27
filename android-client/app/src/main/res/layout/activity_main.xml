@@ -3,13 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F7">
+    android:background="#EDEAF5">
 
-    <!-- 连接状态栏 -->
+    <!-- 连接状态栏 — 毛玻璃暗色 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:background="#1E2028"
+        android:background="@drawable/bg_glass_dark"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp">
 
@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="○ 未连接"
-            android:textColor="#FF453A"
+            android:textColor="#FF8E8E93"
             android:textSize="13sp" />
 
         <TextView
@@ -31,47 +31,59 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- 消息列表 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/messageList"
+    <!-- 消息列表区域 — 毛玻璃背景 -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:clipToPadding="false"
-        android:padding="8dp" />
+        android:background="@drawable/bg_glass_card"
+        android:layout_margin="8dp">
 
-    <!-- 底部输入区 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/messageList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp" />
+    </FrameLayout>
+
+    <!-- 底部输入区 — 毛玻璃卡片 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
-        android:elevation="4dp"
+        android:background="@drawable/bg_glass_card"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:elevation="4dp"
+        android:padding="8dp"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp">
 
+        <!-- 标题输入 -->
         <EditText
             android:id="@+id/reminderTitle"
             android:layout_width="match_parent"
             android:layout_height="36dp"
-            android:background="#F7F8FA"
+            android:background="@drawable/bg_input_glass"
             android:gravity="center_vertical|start"
             android:hint="标题（可选）"
             android:maxLength="50"
             android:paddingHorizontal="10dp"
             android:textSize="13sp" />
 
+        <!-- 内容输入 -->
         <EditText
             android:id="@+id/reminderBody"
             android:layout_width="match_parent"
             android:layout_height="36dp"
             android:layout_marginTop="4dp"
-            android:background="#F7F8FA"
+            android:background="@drawable/bg_input_glass"
             android:gravity="center_vertical|start"
             android:hint="输入提醒内容..."
             android:maxLength="200"
             android:paddingHorizontal="10dp"
             android:textSize="13sp" />
 
+        <!-- 按钮行 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
@@ -84,9 +96,10 @@
                 android:layout_height="36dp"
                 android:layout_marginEnd="4dp"
                 android:layout_weight="1"
-                android:backgroundTint="#1E2028"
+                android:background="@drawable/bg_glass_dark"
                 android:text="启动服务"
                 android:textAllCaps="false"
+                android:textColor="#FFFFFF"
                 android:textSize="12sp" />
 
             <Button
@@ -95,10 +108,11 @@
                 android:layout_height="36dp"
                 android:layout_marginStart="4dp"
                 android:layout_weight="1"
-                android:backgroundTint="#2468F2"
+                android:background="@drawable/bg_button_gradient"
                 android:enabled="false"
                 android:text="发送"
                 android:textAllCaps="false"
+                android:textColor="#FFFFFF"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>

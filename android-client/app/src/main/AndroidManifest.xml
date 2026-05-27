@@ -32,6 +32,8 @@
             </intent-filter>
         </service>
 
+                <service android:name=".service.BubbleService" android:exported="false" />
+
         <!-- 主 Activity -->
         <activity
             android:name=".ui.MainActivity"
@@ -53,4 +55,5 @@
         </receiver>
 
     </application>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 </manifest>

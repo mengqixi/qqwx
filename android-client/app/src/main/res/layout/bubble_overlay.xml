@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="280dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- 拖拽头 -->
+        <FrameLayout
+            android:id="@+id/bubbleHeader"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_glass_dark"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:text="✎ 快速发送"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/btnBubbleClose"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end|center_vertical"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="#999"
+                android:textSize="14sp" />
+        </FrameLayout>
+
+        <!-- 标题输入 -->
+        <EditText
+            android:id="@+id/bubbleTitle"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_input_glass"
+            android:hint="标题（可选）"
+            android:maxLength="50"
+            android:paddingHorizontal="10dp"
+            android:textSize="13sp" />
+
+        <!-- 内容输入 -->
+        <EditText
+            android:id="@+id/bubbleBody"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_input_glass"
+            android:hint="输入内容..."
+            android:maxLength="200"
+            android:paddingHorizontal="10dp"
+            android:textSize="13sp" />
+
+        <!-- 发送按钮 -->
+        <Button
+            android:id="@+id/btnBubbleSend"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_button_gradient"
+            android:text="发送提醒"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+</FrameLayout>

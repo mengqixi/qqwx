@@ -178,6 +178,18 @@ class WebSocketService : Service() {
                     onReminderReceived?.invoke(title, body)
                 }
 
+                // ── 照片接收 ──
+                "photo" -> {
+                    val from = msg.optString("from", "pc")
+                    val name = msg.optString("name", "photo.jpg")
+                    val data = msg.optString("data", "")
+
+                    if (data.isNotEmpty()) {
+                        savePhotoToGallery(data, name)
+                    }
+                    onReminderReceived?.invoke("📷 来自${if (from == "pc") "PC" else "手机"}的照片", name)
+                }
+
                 "peer_status" -> {
                     // 在线状态更新，忽略
                 }
@@ -202,6 +214,27 @@ class WebSocketService : Service() {
         }
         ws?.send(msg.toString())
         Log.i(TAG, "Reminder sent to PC")
+    }
+
+    // ─── 保存照片到相册 ──────────────────────────────────────────
+
+    private fun savePhotoToGallery(base64: String, fileName: String) {
+        try {
+            val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+            val dir = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+            if (dir != null && !dir.exists()) dir.mkdirs()
+            val file = java.io.File(dir, fileName)
+            java.io.FileOutputStream(file).use { it.write(bytes) }
+
+            // 通知系统相册刷新
+            val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+            intent.data = android.net.Uri.fromFile(file)
+            sendBroadcast(intent)
+
+            Log.i(TAG, "Photo saved: ${file.absolutePath} (${bytes.size} bytes)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save photo", e)
+        }
     }
 
     // ─── 通知 ─────────────────────────────────────────────────────
