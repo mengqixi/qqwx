@@ -371,6 +371,35 @@ body {
     color: var(--accent);
 }
 
+.btn-photo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: var(--font);
+    transition: all 0.2s;
+}
+
+.btn-photo:hover {
+    background: rgba(124, 141, 240, 0.2);
+    border-color: rgba(124, 141, 240, 0.4);
+    color: var(--accent);
+}
+
+.photo-status {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    min-width: 60px;
+}
+
 /* ═══ Buttons ════════════════════════════════════════════════════ */
 
 .btn {

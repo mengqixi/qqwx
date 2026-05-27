@@ -216,6 +216,19 @@ class WebSocketService : Service() {
         Log.i(TAG, "Reminder sent to PC")
     }
 
+    // ─── 发送照片（手机 → PC） ─────────────────────────────────
+
+    fun sendPhotoToPc(base64: String, fileName: String) {
+        val msg = JSONObject().apply {
+            put("type", "photo")
+            put("target", "pc")
+            put("data", base64)
+            put("name", fileName)
+        }
+        ws?.send(msg.toString())
+        Log.i(TAG, "Photo sent to PC: $fileName (${base64.length} chars)")
+    }
+
     // ─── 保存照片到相册 ──────────────────────────────────────────
 
     private fun savePhotoToGallery(base64: String, fileName: String) {

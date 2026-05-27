@@ -9,7 +9,7 @@ const https = require('https');
 const PORT = parseInt(process.env.WS_PORT, 10) || 9527;
 const FCM_KEY_PATH = process.env.FCM_KEY_PATH;
 const PING_INTERVAL = 30000;
-const MAX_PAYLOAD_SIZE = 4096;
+const MAX_PAYLOAD_SIZE = 50 * 1024 * 1024; // 50MB (for photos)
 
 // 连接存储
 const clients = new Map();

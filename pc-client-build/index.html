@@ -115,13 +115,15 @@
                 <div class="compose-footer">
                     <div class="footer-left">
                         <input type="file" id="photoInput" accept="image/*" hidden />
-                        <button class="btn btn-icon-only" id="btnAttach" title="发送照片">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <button class="btn btn-photo" id="btnAttach" title="发送照片">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                                 <circle cx="8.5" cy="8.5" r="1.5"/>
                                 <path d="M21 15l-5-5L5 21"/>
                             </svg>
+                            <span>照片</span>
                         </button>
+                        <span id="photoStatus" class="photo-status"></span>
                         <span class="compose-hint">按 Enter 发送</span>
                     </div>
                     <button class="btn btn-primary" id="btnRemind" disabled>

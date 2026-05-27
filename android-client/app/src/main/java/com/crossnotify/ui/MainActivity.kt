@@ -27,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var connectionInfo: TextView
     private lateinit var btnToggle: Button
     private lateinit var btnRemindPc: Button
+    private lateinit var btnSendPhoto: Button
+    private lateinit var btnBubble: Button
     private lateinit var reminderTitle: EditText
     private lateinit var reminderBody: EditText
     private lateinit var messageList: RecyclerView
@@ -77,12 +79,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 照片选择器
+    private val photoPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val bytes = inputStream?.readBytes() ?: return@registerForActivityResult
+            inputStream.close()
+            val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+            val fileName = "photo_${System.currentTimeMillis()}.jpg"
+
+            wsService?.sendPhotoToPc(base64, fileName)
+            addMessage("sent", "📷 照片已发送", fileName)
+            Toast.makeText(this, "照片已发送到 PC", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "照片读取失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         statusText = findViewById(R.id.statusText)
         connectionInfo = findViewById(R.id.connectionInfo)
+        btnToggle = findViewById(R.id.btnToggle)
+        btnRemindPc = findViewById(R.id.btnRemindPc)
+        btnSendPhoto = findViewById(R.id.btnSendPhoto)
+        btnBubble = findViewById(R.id.btnBubble)
+        reminderTitle = findViewById(R.id.reminderTitle)
         btnToggle = findViewById(R.id.btnToggle)
         btnRemindPc = findViewById(R.id.btnRemindPc)
         reminderTitle = findViewById(R.id.reminderTitle)
@@ -105,6 +132,30 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     toggleService(true)
                 }
+            }
+        }
+
+        // 发送照片
+        btnSendPhoto.setOnClickListener {
+            photoPickerLauncher.launch("image/*")
+        }
+
+        // 悬浮窗
+        btnBubble.setOnClickListener {
+            val intent = Intent(this, com.crossnotify.service.BubbleService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (android.provider.Settings.canDrawOverlays(this)) {
+                    startService(intent)
+                } else {
+                    val overlayIntent = Intent(
+                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:$packageName")
+                    )
+                    startActivity(overlayIntent)
+                    Toast.makeText(this, "请允许悬浮窗权限后重试", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                startService(intent)
             }
         }
 
@@ -162,18 +213,20 @@ class MainActivity : AppCompatActivity() {
                 startService(intent)
             }
             serviceRunning = true
-            btnToggle.text = "停止服务"
+            btnToggle.visibility = android.view.View.GONE
             connectionInfo.text = "连接中..."
             addMessage("system", "服务已启动", "")
         } else {
             intent.action = "DISCONNECT"
             startService(intent)
             serviceRunning = false
-            btnToggle.text = "启动服务"
-            connectionInfo.text = "服务已停止"
+            btnToggle.visibility = android.view.View.VISIBLE
+            btnToggle.text = "▶"
+            connectionInfo.text = "已停止"
             statusText.text = "○ 已停止"
             statusText.setTextColor(0xFF8E8E93.toInt())
             btnRemindPc.isEnabled = false
+            btnSendPhoto.isEnabled = false
             addMessage("system", "服务已停止", "")
         }
     }
@@ -185,7 +238,7 @@ class MainActivity : AppCompatActivity() {
         when (state) {
             WebSocketService.ConnectionState.CONNECTED -> updateConnectionStatus(true)
             WebSocketService.ConnectionState.CONNECTING -> {
-                btnToggle.text = "停止服务"
+                btnToggle.visibility = android.view.View.GONE
                 connectionInfo.text = "连接中..."
                 serviceRunning = true
             }
@@ -195,12 +248,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateConnectionStatus(connected: Boolean) {
         statusText.text = if (connected) "● 已连接" else "○ 未连接"
-        statusText.setTextColor(if (connected) 0xFF34C759.toInt() else 0xFFFF453A.toInt())
+        statusText.setTextColor(if (connected) 0xFF60D7A9.toInt() else 0xFFFF453A.toInt())
         btnRemindPc.isEnabled = connected
+        btnSendPhoto.isEnabled = connected
+        btnBubble.visibility = if (connected) android.view.View.VISIBLE else android.view.View.GONE
         connectionInfo.text = if (connected) "在线" else "离线"
         if (connected && !serviceRunning) {
             serviceRunning = true
-            btnToggle.text = "停止服务"
+            btnToggle.visibility = android.view.View.GONE
+        }
+        if (!connected) {
+            btnToggle.visibility = android.view.View.VISIBLE
+            btnToggle.text = "▶"
         }
     }
 

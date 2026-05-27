@@ -29,6 +29,19 @@
             android:text="点按启动"
             android:textColor="#8E8E93"
             android:textSize="12sp" />
+
+        <!-- 启动/停止服务 小红点按钮 -->
+        <Button
+            android:id="@+id/btnToggle"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_button_gradient"
+            android:gravity="center"
+            android:text="▶"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:visibility="visible" />
     </LinearLayout>
 
     <!-- 消息列表区域 — 毛玻璃背景 -->
@@ -83,7 +96,7 @@
             android:paddingHorizontal="10dp"
             android:textSize="13sp" />
 
-        <!-- 按钮行 -->
+        <!-- 按钮行：发送 | 照片 | 悬浮 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
@@ -91,22 +104,10 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/btnToggle"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_glass_dark"
-                android:text="启动服务"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp" />
-
-            <Button
                 android:id="@+id/btnRemindPc"
                 android:layout_width="0dp"
                 android:layout_height="36dp"
-                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_button_gradient"
                 android:enabled="false"
@@ -114,6 +115,29 @@
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnSendPhoto"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/bg_glass_dark"
+                android:enabled="false"
+                android:gravity="center"
+                android:text="📷"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btnBubble"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="0dp"
+                android:background="@drawable/bg_glass_dark"
+                android:gravity="center"
+                android:text="⊕"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 

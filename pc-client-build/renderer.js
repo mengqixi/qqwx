@@ -24,6 +24,7 @@ const btnClose = $('#btnClose');
 const logEmpty = document.querySelector('.log-empty');
 const btnAttach = $('#btnAttach');
 const photoInput = $('#photoInput');
+const photoStatus = $('#photoStatus');
 
 let ws = null;
 let reconnectTimer = null;
@@ -223,6 +224,8 @@ btnAttach.addEventListener('click', () => photoInput.click());
 photoInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    photoStatus.textContent = '📤 上传中...';
+    btnAttach.disabled = true;
     const reader = new FileReader();
     reader.onload = () => {
         const base64 = reader.result.split(',')[1];
@@ -232,10 +235,17 @@ photoInput.addEventListener('change', (e) => {
                 data: base64, name: file.name
             }));
             addLog('sent', `📷 ${file.name}`, `${Math.round(file.size/1024)}KB`);
+            photoStatus.textContent = '✅ 已发送';
         } else {
             addLog('system', '⚠️ 未连接，无法发送照片');
+            photoStatus.textContent = '❌ 连接断开';
         }
+        setTimeout(() => { photoStatus.textContent = ''; btnAttach.disabled = false; }, 2000);
         photoInput.value = '';
+    };
+    reader.onerror = () => {
+        photoStatus.textContent = '❌ 读取失败';
+        btnAttach.disabled = false;
     };
     reader.readAsDataURL(file);
 });
