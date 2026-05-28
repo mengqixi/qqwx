@@ -12,21 +12,30 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.crossnotify.R
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.crossnotify.BuildConfig
+import com.crossnotify.R
+import com.crossnotify.storage.MessageStorage
+import com.crossnotify.ui.MainActivity
 import okhttp3.*
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 class BubbleService : Service() {
 
-    companion object { private const val TAG = "BubbleService" }
+    companion object {
+        private const val TAG = "BubbleService"
+        private const val MAX_HISTORY = 20
+    }
+
     private lateinit var wm: WindowManager
     private var bubbleView: View? = null
     private var ws: WebSocket? = null
@@ -35,11 +44,19 @@ class BubbleService : Service() {
     private var initialX = 0; private var initialY = 0
     private var initialTouchX = 0f; private var initialTouchY = 0f
 
+    // 历史消息列表
+    private val historyMessages = mutableListOf<MainActivity.MessageItem>()
+    private lateinit var historyAdapter: BubbleHistoryAdapter
+    private var historyVisible = false
+
     private val client = OkHttpClient.Builder()
         .proxy(java.net.Proxy.NO_PROXY)
         .pingInterval(30, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).build()
 
-    override fun onCreate() { super.onCreate(); wm = getSystemService(WINDOW_SERVICE) as WindowManager }
+    override fun onCreate() {
+        super.onCreate()
+        wm = getSystemService(WINDOW_SERVICE) as WindowManager
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "HIDE") { hideBubble(); stopSelf(); return START_NOT_STICKY }
@@ -55,7 +72,6 @@ class BubbleService : Service() {
         val req = Request.Builder().url(BuildConfig.WS_URL).build()
         ws = client.newWebSocket(req, object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {
-                // 注册 HMS token
                 val token = WebSocketService.pendingFcmToken
                 if (token != null) {
                     val msg = JSONObject().apply { put("type", "register_fcm"); put("token", token) }
@@ -81,16 +97,33 @@ class BubbleService : Service() {
         val title = msg.optString("title", "新提醒")
         val body = msg.optString("body", "")
         val from = msg.optString("from", "pc")
+        val isPinned = msg.optBoolean("pin", false) || msg.optString("pin", "false") == "true"
+        val pinExpiry = msg.optLong("pinExpiry", 0L)
+
+        // 添加到历史
+        val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())
+        val item = MainActivity.MessageItem(
+            type = "received",
+            title = title,
+            body = body,
+            time = time,
+            pinned = isPinned,
+            pinExpiry = pinExpiry,
+            timestamp = System.currentTimeMillis(),
+            from = from
+        )
+        addToHistory(item)
+
         mainHandler.post {
             try {
                 val tv = bubbleView?.findViewById<TextView>(R.id.bubbleMsg)
-                tv?.text = "📩 ${if (from == "pc") "PC" else "手机"}: ${title}\n$body"
+                val prefix = if (isPinned) "📌 " else "📩 "
+                tv?.text = "${prefix}${if (from == "pc") "PC" else "手机"}: ${title}\n$body"
                 tv?.visibility = View.VISIBLE
                 tv?.setOnClickListener {
-                    startActivity(Intent(this@BubbleService, com.crossnotify.ui.MainActivity::class.java).apply {
+                    startActivity(Intent(this@BubbleService, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     })
-                    stopSelf()
                 }
                 mainHandler.postDelayed({ tv?.visibility = View.GONE }, 5000)
             } catch (_: Exception) {}
@@ -101,6 +134,21 @@ class BubbleService : Service() {
         val data = msg.optString("data", "")
         val name = msg.optString("name", "photo.jpg")
         val from = msg.optString("from", "pc")
+
+        // 添加到历史
+        val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())
+        val item = MainActivity.MessageItem(
+            type = "photo_received",
+            title = "📷 照片",
+            body = "来自${if (from == "pc") "PC" else "手机"}",
+            time = time,
+            photoBase64 = data,
+            timestamp = System.currentTimeMillis(),
+            from = from,
+            name = name
+        )
+        addToHistory(item)
+
         mainHandler.post {
             try {
                 // 显示预览图
@@ -111,7 +159,7 @@ class BubbleService : Service() {
                     iv?.setImageBitmap(bmp)
                     iv?.visibility = View.VISIBLE
                     iv?.setOnClickListener {
-                        startActivity(Intent(this@BubbleService, com.crossnotify.ui.MainActivity::class.java).apply {
+                        startActivity(Intent(this@BubbleService, MainActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         })
                         stopSelf()
@@ -123,6 +171,22 @@ class BubbleService : Service() {
                 tv?.visibility = View.VISIBLE
                 mainHandler.postDelayed({ tv?.visibility = View.GONE; bubbleView?.findViewById<ImageView>(R.id.bubblePhoto)?.visibility = View.GONE }, 8000)
             } catch (_: Exception) {}
+        }
+    }
+
+    private fun addToHistory(item: MainActivity.MessageItem) {
+        historyMessages.add(item)
+        if (historyMessages.size > MAX_HISTORY) {
+            historyMessages.removeAt(0)
+        }
+        // 持久化
+        MessageStorage.saveMessages(this, historyMessages)
+        // 更新适配器
+        if (::historyAdapter.isInitialized) {
+            mainHandler.post {
+                historyAdapter.updateMessages(historyMessages)
+                historyAdapter.notifyDataSetChanged()
+            }
         }
     }
 
@@ -162,18 +226,113 @@ class BubbleService : Service() {
             }
         }
 
+        // ── 历史消息列表 ──
+        val historyPanel = bubbleView?.findViewById<View>(R.id.bubbleHistoryPanel)!!
+        val historyRecycler = bubbleView?.findViewById<RecyclerView>(R.id.bubbleHistoryList)!!
+
+        // 从本地加载历史消息
+        val savedMessages = MessageStorage.loadMessages(this)
+        historyMessages.clear()
+        historyMessages.addAll(savedMessages.takeLast(MAX_HISTORY))
+
+        historyAdapter = BubbleHistoryAdapter(historyMessages) { msg ->
+            // 点击消息打开 MainActivity
+            startActivity(Intent(this@BubbleService, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            })
+        }
+        historyRecycler.layoutManager = LinearLayoutManager(this)
+        historyRecycler.adapter = historyAdapter
+
+        bubbleView?.findViewById<View>(R.id.btnBubbleHistory)?.setOnClickListener {
+            historyVisible = !historyVisible
+            historyPanel.visibility = if (historyVisible) View.VISIBLE else View.GONE
+            if (historyVisible) {
+                historyAdapter.updateMessages(historyMessages)
+                historyAdapter.notifyDataSetChanged()
+            }
+        }
+
         // 发送
         bubbleView?.findViewById<Button>(R.id.btnBubbleSend)?.setOnClickListener {
             val body = bubbleView?.findViewById<EditText>(R.id.bubbleBody)?.text?.toString()?.trim() ?: ""
             if (body.isEmpty()) { Toast.makeText(this, "请输入内容", Toast.LENGTH_SHORT).show(); return@setOnClickListener }
-            val msg = JSONObject().apply { put("type", "reminder"); put("target", "pc"); put("title", "悬浮窗"); put("body", body) }
+
+            // 发送（不带置顶，悬浮窗保持简洁；如需置顶可后续添加开关）
+            val msg = JSONObject().apply {
+                put("type", "reminder")
+                put("target", "pc")
+                put("title", "悬浮窗")
+                put("body", body)
+            }
             ws?.send(msg.toString())
+
+            // 添加到本地历史
+            val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())
+            val item = MainActivity.MessageItem(
+                type = "sent",
+                title = "已发送",
+                body = body,
+                time = time,
+                timestamp = System.currentTimeMillis()
+            )
+            addToHistory(item)
+
             bubbleView?.findViewById<EditText>(R.id.bubbleBody)?.text?.clear()
             Toast.makeText(this, "已发送", Toast.LENGTH_SHORT).show()
         }
+
         // 关闭
-        bubbleView?.findViewById<View>(R.id.btnBubbleClose)?.setOnClickListener { stopSelf() }
+        bubbleView?.findViewById<View>(R.id.btnBubbleClose)?.setOnClickListener {
+            stopSelf()
+        }
+
         wm.addView(bubbleView, params)
     }
+
     private fun hideBubble() { bubbleView?.let { wm.removeView(it) }; bubbleView = null }
+}
+
+/**
+ * 悬浮窗历史消息适配器
+ */
+class BubbleHistoryAdapter(
+    private var messages: List<MainActivity.MessageItem>,
+    private val onClick: (MainActivity.MessageItem) -> Unit
+) : androidx.recyclerview.widget.RecyclerView.Adapter<BubbleHistoryAdapter.ViewHolder>() {
+
+    class ViewHolder(view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+        val textView: TextView = view as TextView
+    }
+
+    fun updateMessages(newMessages: List<MainActivity.MessageItem>) {
+        messages = newMessages
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val tv = TextView(parent.context).apply {
+            setPadding(8, 6, 8, 6)
+            textSize = 12f
+            maxLines = 2
+            setTextColor(0xFF333333.toInt())
+        }
+        return ViewHolder(tv)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val msg = messages[position]
+        val isPinned = msg.pinned && msg.pinExpiry > System.currentTimeMillis()
+        val prefix = when {
+            isPinned -> "📌 "
+            msg.type == "sent" || msg.type == "photo_sent" -> "📤 "
+            msg.type == "received" || msg.type == "photo_received" -> "📩 "
+            else -> ""
+        }
+        val displayBody = if (msg.body.length > 30) msg.body.take(30) + "…" else msg.body
+        holder.textView.text = "${prefix}${msg.title}${if (displayBody.isNotEmpty()) ": $displayBody" else ""}"
+        holder.textView.setTextColor(if (isPinned) 0xFFE89B3C.toInt() else 0xFF333333.toInt())
+        holder.itemView.setOnClickListener { onClick(msg) }
+    }
+
+    override fun getItemCount() = messages.size
 }

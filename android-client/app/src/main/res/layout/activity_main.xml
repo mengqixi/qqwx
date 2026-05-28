@@ -69,22 +69,69 @@
         android:padding="10dp"
         android:layout_margin="8dp">
 
-        <EditText
-            android:id="@+id/reminderTitle"
+        <!-- 置顶选项 -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="38dp"
-            android:background="@drawable/bg_input_glass"
-            android:gravity="center_vertical|start"
-            android:hint="标题（可选）"
-            android:maxLength="50"
-            android:paddingHorizontal="12dp"
-            android:textSize="14sp" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp">
+
+            <CheckBox
+                android:id="@+id/pinCheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📌 置顶"
+                android:textSize="13sp"
+                android:textColor="#5A5A7A" />
+
+            <Button
+                android:id="@+id/pinDuration1h"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_glass_dark"
+                android:text="1h"
+                android:textSize="11sp"
+                android:textColor="#CCC"
+                android:textAllCaps="false"
+                android:enabled="false"
+                android:alpha="0.4"
+                android:padding="0dp" />
+
+            <Button
+                android:id="@+id/pinDuration6h"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_button_gradient"
+                android:text="6h"
+                android:textSize="11sp"
+                android:textColor="#FFF"
+                android:textAllCaps="false"
+                android:enabled="false"
+                android:alpha="0.4"
+                android:padding="0dp" />
+
+            <Button
+                android:id="@+id/pinDuration24h"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_glass_dark"
+                android:text="24h"
+                android:textSize="11sp"
+                android:textColor="#CCC"
+                android:textAllCaps="false"
+                android:enabled="false"
+                android:alpha="0.4"
+                android:padding="0dp" />
+        </LinearLayout>
 
         <EditText
             android:id="@+id/reminderBody"
             android:layout_width="match_parent"
             android:layout_height="38dp"
-            android:layout_marginTop="4dp"
             android:background="@drawable/bg_input_glass"
             android:gravity="center_vertical|start"
             android:hint="输入提醒内容..."
@@ -92,7 +139,7 @@
             android:paddingHorizontal="12dp"
             android:textSize="14sp" />
 
-        <!-- 底栏：左=照片+悬浮 右=发送，等PC风格 -->
+        <!-- 底栏：左=照片+悬浮 右=发送 -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="44dp"

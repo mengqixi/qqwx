@@ -38,3 +38,10 @@ Thumbs.db
 /tmp/
 *.zip
 *.log
+
+# Android local
+local.properties
+android-client/local.properties
+
+# Windows
+*.jpg

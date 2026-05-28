@@ -12,6 +12,9 @@ import com.huawei.hms.push.RemoteMessage
 /**
  * HMS Push Kit 推送接收服务
  * 华为手机后台推送，无论应用是否存活都能收到
+ *
+ * 当应用被杀死时，HMS 系统服务仍然能收到推送并显示通知。
+ * 收到推送时尝试重启 WebSocketService 以便恢复实时连接。
  */
 class HmsPushService : HmsMessageService() {
 
@@ -35,7 +38,27 @@ class HmsPushService : HmsMessageService() {
         val data = message.dataOfMap
         val title = data["title"] ?: "新提醒"
         val body = data["body"] ?: "收到来自 PC 端的提醒"
-        showNotification(title, body)
+        val isPinned = data["pin"] == "true"
+        val pinExpiry = data["pinExpiry"]?.toLongOrNull() ?: 0L
+
+        showNotification(
+            if (isPinned) "📌 [置顶] $title" else title,
+            body
+        )
+
+        // 收到推送时尝试重启 WebSocketService（如果已死）
+        try {
+            val wsIntent = Intent(this, WebSocketService::class.java)
+            wsIntent.action = null // 正常启动
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(wsIntent)
+            } else {
+                startService(wsIntent)
+            }
+            Log.i(TAG, "WebSocketService restarted after HMS push")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to restart WebSocketService", e)
+        }
     }
 
     private fun showNotification(title: String, body: String) {

@@ -5,11 +5,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.util.Log
 import com.crossnotify.BuildConfig
 import com.crossnotify.ui.MainActivity
@@ -36,6 +38,7 @@ class WebSocketService : Service() {
         private const val REMINDER_CHANNEL_ID = "crossnotify_reminder"
         private const val NOTIFICATION_ID = 1001
         private const val RECONNECT_DELAY_MS = 5000L
+        private const val RECONNECT_MAX_ATTEMPTS = 100
 
         // 全局回调，供 Activity 监听连接状态
         var onStatusChange: ((Boolean) -> Unit)? = null
@@ -62,6 +65,10 @@ class WebSocketService : Service() {
     private var ws: WebSocket? = null
     private val handler = Handler(Looper.getMainLooper())
     private var reconnectRunnable: Runnable? = null
+    private var reconnectAttempts = 0
+
+    // WakeLock 后台保活
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -78,6 +85,9 @@ class WebSocketService : Service() {
             return START_NOT_STICKY
         }
 
+        // 获取 WakeLock 防止 CPU 休眠
+        acquireWakeLock()
+
         connectWs()
         return START_STICKY
     }
@@ -86,7 +96,36 @@ class WebSocketService : Service() {
 
     override fun onDestroy() {
         disconnectWs()
+        releaseWakeLock()
         super.onDestroy()
+    }
+
+    // ─── WakeLock ─────────────────────────────────────────────────
+
+    private fun acquireWakeLock() {
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "CrossNotify:WebSocketWakeLock"
+            )
+            wakeLock?.acquire(10 * 60 * 1000L) // 10分钟超时，防止异常常驻
+            Log.i(TAG, "WakeLock acquired")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to acquire WakeLock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.i(TAG, "WakeLock released")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to release WakeLock", e)
+        }
+        wakeLock = null
     }
 
     // ─── WebSocket ────────────────────────────────────────────────
@@ -103,6 +142,7 @@ class WebSocketService : Service() {
         ws = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {
                 Log.i(TAG, "WebSocket connected")
+                reconnectAttempts = 0
                 updateState(ConnectionState.CONNECTED)
                 // 上报 HMS Push Token（如果已获取）
                 pendingFcmToken?.let { token ->
@@ -114,6 +154,9 @@ class WebSocketService : Service() {
                     Log.i(TAG, "HMS token registered")
                     pendingFcmToken = null
                 }
+                // 重新获取 WakeLock（续期）
+                releaseWakeLock()
+                acquireWakeLock()
             }
 
             override fun onMessage(ws: WebSocket, text: String) {
@@ -151,8 +194,13 @@ class WebSocketService : Service() {
 
     private fun scheduleReconnect() {
         reconnectRunnable?.let { handler.removeCallbacks(it) }
+        if (reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
+            Log.w(TAG, "Max reconnect attempts reached, stopping")
+            return
+        }
+        reconnectAttempts++
         reconnectRunnable = Runnable {
-            Log.i(TAG, "Attempting reconnect...")
+            Log.i(TAG, "Attempting reconnect... (attempt $reconnectAttempts)")
             connectWs()
         }
         handler.postDelayed(reconnectRunnable!!, RECONNECT_DELAY_MS)
@@ -172,12 +220,27 @@ class WebSocketService : Service() {
                     val from = msg.optString("from", "pc")
                     val title = msg.optString("title", "新提醒")
                     val body = msg.optString("body", "收到来自${if (from == "pc") "PC" else "手机"}端的提醒")
+                    val isPinned = msg.optBoolean("pin", false) || msg.optString("pin", "false") == "true"
+                    val pinExpiry = msg.optLong("pinExpiry", 0L)
+
+                    // 编码 pin 信息到 body 中，供 UI 解析
+                    val sendBody = if (isPinned && pinExpiry > 0) {
+                        "PIN|$pinExpiry|$body"
+                    } else {
+                        body
+                    }
 
                     // 显示通知
-                    showReminderNotification(title, body)
+                    showReminderNotification(
+                        if (isPinned) "📌 [置顶] $title" else title,
+                        body
+                    )
 
                     // 回调给 Activity
-                    onReminderReceived?.invoke(title, body)
+                    onReminderReceived?.invoke(
+                        if (isPinned) "📌 [置顶] $title" else title,
+                        sendBody
+                    )
                 }
 
                 // ── 照片接收 ──
@@ -214,6 +277,15 @@ class WebSocketService : Service() {
             put("target", "pc")
             put("title", title)
             put("body", body)
+            // 解析 body 中的 pin 信息
+            if (body.startsWith("PIN|")) {
+                val parts = body.split("|", limit = 3)
+                if (parts.size == 3) {
+                    put("pin", true)
+                    put("pinExpiry", parts[1].toLongOrNull() ?: 0L)
+                    put("body", parts[2])
+                }
+            }
         }
         ws?.send(msg.toString())
         Log.i(TAG, "Reminder sent to PC")
@@ -253,7 +325,7 @@ class WebSocketService : Service() {
             val uri = contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             if (uri != null) {
                 contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                val path = "系统相册 → $displayName"
+                val path = "系统相冊 → $displayName"
                 Log.i(TAG, "MediaStore save OK: $path")
                 return path
             }
@@ -337,7 +409,6 @@ class WebSocketService : Service() {
             .setPriority(Notification.PRIORITY_HIGH)
             .build()
 
-        nm.notify(System.currentTimeMillis().toInt(), notification)
         nm.notify(System.currentTimeMillis().toInt(), notification)
     }
 

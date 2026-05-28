@@ -340,6 +340,104 @@ body {
 
 .compose-textarea { resize: none; }
 
+/* ═══ Pin Area ═══════════════════════════════════════════════════ */
+
+.pin-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 4px;
+}
+
+.pin-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pin-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.pin-toggle-slider {
+    width: 36px;
+    height: 20px;
+    background: rgba(200, 200, 210, 0.5);
+    border-radius: 10px;
+    position: relative;
+    transition: all 0.25s;
+}
+
+.pin-toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.pin-toggle input:checked + .pin-toggle-slider {
+    background: var(--accent-gradient);
+}
+
+.pin-toggle input:checked + .pin-toggle-slider::after {
+    transform: translateX(16px);
+}
+
+.pin-toggle-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.pin-toggle input:checked ~ .pin-toggle-label {
+    color: var(--accent);
+}
+
+.pin-duration-group {
+    display: flex;
+    gap: 4px;
+    opacity: 0.4;
+    transition: all 0.25s;
+    pointer-events: none;
+}
+
+.pin-checkbox:checked ~ .pin-duration-group,
+.pin-toggle input:checked ~ .pin-duration-group {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.pin-duration-btn {
+    padding: 2px 10px;
+    border: 1px solid rgba(124, 141, 240, 0.2);
+    background: transparent;
+    border-radius: 8px;
+    font-size: 11px;
+    font-family: var(--font);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pin-duration-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.pin-duration-btn.active {
+    background: var(--accent-gradient);
+    color: #fff;
+    border-color: transparent;
+}
+
 .compose-footer {
     display: flex;
     align-items: center;
@@ -550,8 +648,41 @@ body {
 }
 
 .msg-title { font-weight: 600; }
+
+.msg-title.pinned {
+    color: #e89b3c;
+}
+
+.msg-title .pin-badge {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 12px;
+}
+
 .msg-body { opacity: 0.85; }
 .msg-time { font-size: 10px; opacity: 0.5; display: block; margin-top: 3px; }
+
+/* Pinned message highlight */
+.msg-pinned {
+    border-left: 3px solid #e89b3c !important;
+}
+
+.msg-pinned.msg-sent {
+    background: rgba(232, 155, 60, 0.2);
+    border-color: rgba(232, 155, 60, 0.3);
+}
+
+.msg-pinned.msg-received {
+    background: rgba(232, 155, 60, 0.12);
+    border-color: rgba(232, 155, 60, 0.2);
+}
+
+.pin-expiry-badge {
+    font-size: 10px;
+    color: #e89b3c;
+    opacity: 0.7;
+    margin-left: 6px;
+}
 
 /* Photo preview */
 .photo-preview {

@@ -101,10 +101,21 @@
             <!-- 提醒输入区 -->
             <div class="compose-card">
                 <div class="compose-body">
-                    <input type="text" id="reminderTitle" class="compose-input"
-                           placeholder="提醒标题" maxlength="50" />
                     <textarea id="reminderBody" class="compose-textarea"
                               placeholder="输入提醒内容..." maxlength="200" rows="2"></textarea>
+                    <!-- 置顶区域 -->
+                    <div class="pin-area">
+                        <label class="pin-toggle">
+                            <input type="checkbox" id="pinCheckbox" />
+                            <span class="pin-toggle-slider"></span>
+                            <span class="pin-toggle-label">📌 置顶</span>
+                        </label>
+                        <div class="pin-duration-group" id="pinDurationGroup">
+                            <button class="pin-duration-btn active" data-hours="1">1h</button>
+                            <button class="pin-duration-btn" data-hours="6">6h</button>
+                            <button class="pin-duration-btn" data-hours="24">24h</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="compose-footer">
                     <div class="footer-left">

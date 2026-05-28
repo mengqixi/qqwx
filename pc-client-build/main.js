@@ -18,6 +18,28 @@ function saveConfig(config) {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
+// ─── Message persistence ──────────────────────────────────────────────
+const messagesPath = path.join(app.getPath('userData'), 'messages.json');
+
+function loadMessages() {
+    try {
+        if (fs.existsSync(messagesPath)) {
+            return JSON.parse(fs.readFileSync(messagesPath, 'utf8'));
+        }
+    } catch (e) {
+        console.error('Failed to load messages:', e.message);
+    }
+    return [];
+}
+
+function saveMessages(messages) {
+    try {
+        fs.writeFileSync(messagesPath, JSON.stringify(messages, null, 2));
+    } catch (e) {
+        console.error('Failed to save messages:', e.message);
+    }
+}
+
 let mainWindow = null;
 let tray = null;
 let config = loadConfig();
@@ -83,6 +105,26 @@ ipcMain.handle('set-config', (_, newConfig) => {
     config = { ...config, ...newConfig };
     saveConfig(config);
     return config;
+});
+
+ipcMain.handle('get-messages', () => {
+    return loadMessages();
+});
+
+ipcMain.handle('save-message', (_, message) => {
+    const messages = loadMessages();
+    messages.push(message);
+    // Keep max 500 messages to prevent file bloat
+    if (messages.length > 500) {
+        messages.splice(0, messages.length - 500);
+    }
+    saveMessages(messages);
+    return true;
+});
+
+ipcMain.handle('clear-messages', () => {
+    saveMessages([]);
+    return true;
 });
 
 ipcMain.handle('show-notification', (_, { title, body }) => {

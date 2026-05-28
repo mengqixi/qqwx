@@ -5,6 +5,16 @@
     android:orientation="vertical"
     android:padding="6dp">
 
+    <!-- 置顶徽章 -->
+    <TextView
+        android:id="@+id/msgPinBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:textColor="#E89B3C"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/msgTitle"
         android:layout_width="wrap_content"

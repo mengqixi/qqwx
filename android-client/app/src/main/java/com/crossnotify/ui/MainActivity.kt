@@ -9,7 +9,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
@@ -20,8 +23,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.crossnotify.R
 import com.crossnotify.service.WebSocketService
+import com.crossnotify.storage.MessageStorage
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        // 用于悬浮窗/BubbleService 访问消息列表
+        var activeMessages: MutableList<MessageItem> = mutableListOf()
+    }
 
     private lateinit var statusText: TextView
     private lateinit var connectionInfo: TextView
@@ -29,9 +38,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnRemindPc: Button
     private lateinit var btnSendPhoto: Button
     private lateinit var btnBubble: Button
-    private lateinit var reminderTitle: EditText
     private lateinit var reminderBody: EditText
     private lateinit var messageList: RecyclerView
+
+    // ── 置顶 UI ──
+    private lateinit var pinCheckbox: CheckBox
+    private lateinit var pinDuration1h: Button
+    private lateinit var pinDuration6h: Button
+    private lateinit var pinDuration24h: Button
+    private var pinDurationHours: Int = 6 // 默认 6h
 
     private var wsService: WebSocketService? = null
     private var isBound = false
@@ -53,7 +68,12 @@ class MainActivity : AppCompatActivity() {
         val title: String,
         val body: String,
         val time: String,
-        val photoBase64: String = ""
+        val photoBase64: String = "",
+        val pinned: Boolean = false,
+        val pinExpiry: Long = 0L,
+        val timestamp: Long = System.currentTimeMillis(),
+        val from: String = "",
+        val name: String = ""
     )
 
     private val connection = object : ServiceConnection {
@@ -64,12 +84,14 @@ class MainActivity : AppCompatActivity() {
             // 监听收到的提醒
             WebSocketService.onReminderReceived = { title, body ->
                 runOnUiThread {
-                    addMessage("received", title, body)
+                    // body now contains pin info encoded as "PIN|expiry|actualBody"
+                    val (actualBody, isPinned, pinExpiry) = parsePinBody(body)
+                    addMessage("received", title, actualBody, pinned = isPinned, pinExpiry = pinExpiry)
                 }
             }
             WebSocketService.onPhotoReceived = { base64, fileName ->
                 runOnUiThread {
-                    addMessage("photo_received", "📷 收到照片", "点击右下角保存", photoBase64 = base64)
+                    addMessage("photo_received", "📷 收到照片", "点击右下角保存", photoBase64 = base64, name = fileName)
                 }
             }
             WebSocketService.onStatusChange = { connected ->
@@ -134,12 +156,19 @@ class MainActivity : AppCompatActivity() {
         btnRemindPc = findViewById(R.id.btnRemindPc)
         btnSendPhoto = findViewById(R.id.btnSendPhoto)
         btnBubble = findViewById(R.id.btnBubble)
-        reminderTitle = findViewById(R.id.reminderTitle)
-        btnToggle = findViewById(R.id.btnToggle)
-        btnRemindPc = findViewById(R.id.btnRemindPc)
-        reminderTitle = findViewById(R.id.reminderTitle)
         reminderBody = findViewById(R.id.reminderBody)
         messageList = findViewById(R.id.messageList)
+
+        // 置顶 UI
+        pinCheckbox = findViewById(R.id.pinCheckbox)
+        pinDuration1h = findViewById(R.id.pinDuration1h)
+        pinDuration6h = findViewById(R.id.pinDuration6h)
+        pinDuration24h = findViewById(R.id.pinDuration24h)
+
+        // 加载历史消息
+        val savedMessages = MessageStorage.loadMessages(this)
+        messages.addAll(savedMessages)
+        activeMessages = messages
 
         // 消息列表
         messageAdapter = MessageAdapter(messages) { base64 ->
@@ -148,9 +177,26 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
         }
         messageList.layoutManager = LinearLayoutManager(this).apply {
-            stackFromEnd = true
+            stackFromEnd = false // 置顶需要从顶部开始
         }
         messageList.adapter = messageAdapter
+
+        // 置顶复选框事件
+        pinCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            val alpha = if (isChecked) 1f else 0.4f
+            pinDuration1h.alpha = alpha
+            pinDuration6h.alpha = alpha
+            pinDuration24h.alpha = alpha
+            pinDuration1h.isEnabled = isChecked
+            pinDuration6h.isEnabled = isChecked
+            pinDuration24h.isEnabled = isChecked
+        }
+
+        // 置顶时长选择
+        pinDuration1h.setOnClickListener { selectPinDuration(1) }
+        pinDuration6h.setOnClickListener { selectPinDuration(6) }
+        pinDuration24h.setOnClickListener { selectPinDuration(24) }
+        selectPinDuration(6) // 默认
 
         btnToggle.setOnClickListener {
             if (serviceRunning) {
@@ -189,18 +235,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnRemindPc.setOnClickListener {
-            val title = reminderTitle.text.toString().trim()
             val body = reminderBody.text.toString().trim()
-            if (title.isEmpty() && body.isEmpty()) {
+            if (body.isEmpty()) {
                 Toast.makeText(this, "请输入提醒内容", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            wsService?.sendReminderToPc(title, body)
-            addMessage("sent", title.ifEmpty { "提醒" }, body)
-            reminderTitle.text.clear()
+
+            val isPinned = pinCheckbox.isChecked
+            val pinExpiry = if (isPinned) System.currentTimeMillis() + pinDurationHours * 3600 * 1000L else 0L
+
+            // 发送 pin 信息编码在 body 中（WebSocketService 原样转发）
+            val sendBody = if (isPinned) {
+                "PIN|$pinExpiry|$body"
+            } else {
+                body
+            }
+            wsService?.sendReminderToPc(if (isPinned) "📌 [置顶]" else "提醒", sendBody)
+            addMessage("sent", if (isPinned) "📌 已置顶" else "已发送", body, pinned = isPinned, pinExpiry = pinExpiry)
             reminderBody.text.clear()
         }
 
+        // 检查华为设备电池优化
+        checkBatteryOptimization()
+
+        // 渲染消息
+        renderMessages()
         updateServiceState()
     }
 
@@ -235,10 +294,32 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         if (isBound) {
-            // 不清空回调，保留监听
             unbindService(connection)
             isBound = false
         }
+    }
+
+    private fun selectPinDuration(hours: Int) {
+        pinDurationHours = hours
+        pinDuration1h.isSelected = hours == 1
+        pinDuration6h.isSelected = hours == 6
+        pinDuration24h.isSelected = hours == 24
+        // 更新背景样式
+        pinDuration1h.setBackgroundResource(if (hours == 1) R.drawable.bg_button_gradient else R.drawable.bg_glass_dark)
+        pinDuration6h.setBackgroundResource(if (hours == 6) R.drawable.bg_button_gradient else R.drawable.bg_glass_dark)
+        pinDuration24h.setBackgroundResource(if (hours == 24) R.drawable.bg_button_gradient else R.drawable.bg_glass_dark)
+    }
+
+    private fun parsePinBody(body: String): Triple<String, Boolean, Long> {
+        if (body.startsWith("PIN|")) {
+            val parts = body.split("|", limit = 3)
+            if (parts.size == 3) {
+                val expiry = parts[1].toLongOrNull() ?: 0L
+                val actual = parts[2]
+                return Triple(actual, true, expiry)
+            }
+        }
+        return Triple(body, false, 0L)
     }
 
     private fun requestNotificationPermission() {
@@ -264,7 +345,7 @@ class MainActivity : AppCompatActivity() {
             serviceRunning = true
             btnToggle.visibility = android.view.View.GONE
             connectionInfo.text = "连接中..."
-            addMessage("system", "服务已启动", "")
+            addMessage("system", "", "服务已启动")
         } else {
             intent.action = "DISCONNECT"
             startService(intent)
@@ -276,7 +357,7 @@ class MainActivity : AppCompatActivity() {
             statusText.setTextColor(0xFF8E8E93.toInt())
             btnRemindPc.isEnabled = false
             btnSendPhoto.isEnabled = false
-            addMessage("system", "服务已停止", "")
+            addMessage("system", "", "服务已停止")
         }
     }
 
@@ -312,10 +393,91 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun addMessage(type: String, title: String, body: String = "", photoBase64: String = "") {
+    private fun addMessage(type: String, title: String, body: String = "", photoBase64: String = "",
+                           pinned: Boolean = false, pinExpiry: Long = 0L, name: String = "") {
         val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())
-        messages.add(MessageItem(type, title, body, time, photoBase64))
-        messageAdapter.notifyItemInserted(messages.size - 1)
-        messageList.smoothScrollToPosition(messages.size - 1)
+        val msg = MessageItem(
+            type = type,
+            title = title,
+            body = body,
+            time = time,
+            photoBase64 = photoBase64,
+            pinned = pinned,
+            pinExpiry = pinExpiry,
+            timestamp = System.currentTimeMillis(),
+            name = name
+        )
+        messages.add(msg)
+        // 更新共享实例
+        activeMessages = messages
+        // 持久化
+        MessageStorage.saveMessages(this, messages)
+        // 重新渲染（置顶消息需要排序）
+        renderMessages()
+    }
+
+    private fun renderMessages() {
+        val now = System.currentTimeMillis()
+
+        // 移除过期置顶（pinExpiry > 0 且已过期的取消置顶状态）
+        val expiredMessages = messages.filter { it.pinned && it.pinExpiry > 0 && now >= it.pinExpiry }
+        if (expiredMessages.isNotEmpty()) {
+            val expiredIndices = expiredMessages.map { messages.indexOf(it) }.filter { it >= 0 }
+            for (index in expiredIndices.sortedDescending()) {
+                val old = messages[index]
+                messages[index] = old.copy(pinned = false, pinExpiry = 0L)
+            }
+            // 持久化更新
+            MessageStorage.saveMessages(this, messages)
+        }
+
+        // 更新共享实例
+        activeMessages = messages
+
+        // 排序：置顶优先，然后按时间
+        val sorted = messages.sortedWith(Comparator { a, b ->
+            val aPin = a.pinned && a.pinExpiry > now
+            val bPin = b.pinned && b.pinExpiry > now
+            if (aPin != bPin) {
+                if (aPin) -1 else 1
+            } else {
+                (a.timestamp).compareTo(b.timestamp)
+            }
+        })
+
+        messageAdapter.updateMessages(sorted)
+        messageAdapter.notifyDataSetChanged()
+    }
+
+    /**
+     * 华为/小米等厂商的电池优化检查
+     */
+    private fun checkBatteryOptimization() {
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        val packageName = packageName
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                // 检查是否华为设备
+                val manufacturer = Build.MANUFACTURER.lowercase()
+                if (manufacturer.contains("huawei") || manufacturer.contains("honor")) {
+                    Toast.makeText(this,
+                        "检测到华为设备，建议：\n设置 → 应用 → 梦柒兮 → 电池 → 不允许限制\n以保证后台消息接收",
+                        Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this,
+                        "建议关闭电池优化以保证后台消息接收",
+                        Toast.LENGTH_LONG).show()
+                }
+
+                // 提供跳转电池优化的按钮
+                try {
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = android.net.Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                } catch (_: Exception) {}
+            }
+        }
     }
 }

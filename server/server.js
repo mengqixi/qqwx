@@ -83,6 +83,8 @@ function sendHMS(token, payload) {
                         from: payload.from || 'pc',
                         title: payload.title || '新提醒',
                         body: payload.body || '',
+                        pin: String(payload.pin || false),
+                        pinExpiry: String(payload.pinExpiry || 0),
                         timestamp: String(payload.timestamp || Date.now())
                     }),
                     android: {
@@ -198,6 +200,8 @@ function handleMessage(senderId, senderWs, raw) {
                 fromId: senderId,
                 title: msg.title || '新提醒',
                 body: msg.body || (sender.deviceType === 'pc' ? 'PC 端发来提醒' : '手机端发来提醒'),
+                pin: msg.pin || false,
+                pinExpiry: msg.pinExpiry || 0,
                 timestamp: Date.now(),
             };
 
@@ -272,6 +276,8 @@ function sendFCM(token, payload) {
             from: payload.from || 'pc',
             title: payload.title || '新提醒',
             body: payload.body || '',
+            pin: String(payload.pin || false),
+            pinExpiry: String(payload.pinExpiry || 0),
             timestamp: String(payload.timestamp || Date.now()),
         },
         android: { priority: 'high', ttl: 86400000 },
