@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="pc-client/icon.png" width="80" height="80" alt="梦柒兮">
   <h1>梦柒兮 · CrossNotify</h1>
   <p><strong>跨设备即时提醒系统</strong> — PC ↔ Android 实时互传，永不离线</p>
   <p>
