@@ -44,3 +44,6 @@ android-client/local.properties
 # Windows
 *.jpg
 .mcp.json
+
+# Local config with secrets
+.claude/settings.local.json
