@@ -14,8 +14,6 @@ android-client/app/google-services.json
 dist/
 pc-client/node_modules/
 pc-client/package-lock.json
-pc-client/icon.ico
-pc-client/icon.png
 
 # Server
 server/.env
@@ -45,3 +43,4 @@ android-client/local.properties
 
 # Windows
 *.jpg
+.mcp.json
